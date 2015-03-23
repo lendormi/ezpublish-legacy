@@ -269,9 +269,20 @@ class eZImageAliasHandler
             }
         }
         $objectName = eZImageAliasHandler::normalizeImageName( $objectName );
-        $objectName .= $this->imageSerialNumber();
+        $objectName = $this->trimToFileSystemFileName( $objectName ) . $this->imageSerialNumber();
 
         return $objectName;
+    }
+
+    //TODO (all param needed ?) rename method add test
+    private function trimToFileSystemFileName( $longName, $limit = 200, $truncationSuffix = '' )
+    {
+        if ( strlen( $longName ) <= $limit )
+        {
+            return $longName;
+        }
+
+        return mb_strcut( $longName, 0, $limit - strlen( $truncationSuffix ), "utf-8" );
     }
 
     /*!
@@ -304,7 +315,9 @@ class eZImageAliasHandler
             }
         }
         $objectName = eZImageAliasHandler::normalizeImageName( $objectName );
-        return $objectName;
+
+        // TODO
+        return $this->resolveFileSystemFileName( $objectName, 200 );
     }
 
     /*!
@@ -378,7 +391,11 @@ class eZImageAliasHandler
         $pathParts = array( eZSys::storageDirectory(), $contentImageSubtree );
         if ( $pathString != '' )
         {
-            $pathParts[] = $pathString;
+            //Make sur that all folders are smaller than the FS limit
+            foreach ( explode( '/', $pathString ) as $folder )
+            {
+                $pathParts[] = $this->resolveFileSystemFileName( $folder, 200 );
+            }
         }
         $pathParts[] = $attributeID . '-' . $attributeVersion . '-' . $attributeLanguage;
         $imagePath = implode( '/', $pathParts );
